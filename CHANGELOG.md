@@ -1,5 +1,8 @@
 # pline Changelog
 
+0.5.0
+* Added easy module for easy pipeline creation
+
 0.4.1
 * Better setup.py
 
