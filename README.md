@@ -37,9 +37,9 @@ dict(my_activity)
 
 ## Easy Interface
 
-The pline.easy module supports an easy way to create pipeline definitions, by providing a template that fills in many
-of the details of the pipeline definition for you, so you only need to specify the parts that are unique to your 
-pipeline.
+The pline.easy module supports an easy way to create pipeline definitions, by providing a template
+that fills in many of the details of the pipeline definition for you, so you only need to specify
+the parts that are unique to your pipeline.
 
 Here is how you could define a trivial pipeline that just runs the command `echo Hello World`:
 
@@ -48,21 +48,23 @@ import pline.easy
 
 def setup(pipeline):
     activity = pipeline.get_shell_command_activity('HelloWorldActivity')
+    activity.runsOn = pipeline.get_ec2_resource('HelloWorldNode')
     activity.command = 'echo Hello World'
 
 pline.easy.main(setup)
 ```
 
-This defines a pipeline with an on-demand schedule, with a single ShellScriptActivity.  Assuming this code is saved in 
-a file called create_pipeline.py, you could then create and activate this pipeline by running:
+This defines a pipeline with an on-demand schedule, with a single ShellScriptActivity.  Assuming
+this code is saved in a file called create_pipeline.py, you could then create and activate this
+pipeline by running:
 
 ```bash
 python create_pipeline.py --config defaults.yaml --name "Hello World" --activate
 ```
 
-This would create the pipeline in AWS and activate it.  The defaults.yaml file is a file containing values for 
-options that are required for pipeline definition, and "Hello World" will be the pipeline name.   See below for
-the config file format.  Run
+This would create the pipeline in AWS and activate it.  The defaults.yaml file is a file containing
+values for options that are required for pipeline definition, and "Hello World" will be the pipeline
+name.   See below for the config file format.  Run
 
 ```bash
 python create_pipeline.py -h
@@ -70,8 +72,9 @@ python create_pipeline.py -h
 
 for command-line help, and for a list of the options which must be defined in defaults.yaml.
  
-Now, let's make the example pipeline more realistic.  Let's add a schedule to make it run daily at 21:00 UTC, and
-add an SNS error handler to the shell script activity.  We'll also allow configuring the message that's echoed.
+Now, let's make the example pipeline more realistic.  Let's add a schedule to make it run daily at
+21:00 UTC, and add an SNS error handler to the shell script activity.  We'll also allow configuring
+the message that's echoed.
 
 ```python
 import datetime
@@ -93,20 +96,21 @@ def setup(pipeline):
 pline.easy.main(setup)
 ```
 
-This example showed several new things. It shows using the pipeline.options property to access configuration options, 
-in this case the SNS_ARN and RECIPIENT options.  The onError handler showed creating an SnsAlarm, pre-configured with a 
-generic message and subject which will show the pipeline name, exit status, execution date, and a link to the web 
-console for the pipeline.  The `get_ec2_resource` method shows creating an EC2 resource.  It also shows creating a 
-schedule for the pipeline.  The pipeline can be created with this command:
+This example showed several new things. It shows using the pipeline.options property to access
+configuration options, in this case the SNS_ARN and RECIPIENT options.  The onError handler showed
+creating an SnsAlarm, pre-configured with a generic message and subject which will show the pipeline
+name, exit status, execution date, and a link to the web console for the pipeline.  It also shows
+creating a schedule for the pipeline.  The pipeline can be created with this command:
 
 ```bash
 sns=arn:aws:sns:us-west-2:528461152743:adam-test
 python create_pipeline.py -a -c defaults.yaml --name "Hello World" -o SNS_ARN=$sns -o RECIPIENT=Jim
 ```
 
-In this case I passed in the config options using the -o flag.  I could also have passed them in by putting them
-in a config file, or by setting the environment variables PIPELINE_SNS_ARN and PIPELINE_RECIPIENT.  The environment
-variable prefix, `PIPELINE_`, can be changed by passing the `env_prefix=`, to `pline.easy.main`, as in:
+In this case I passed in the config options using the -o flag.  I could also have passed them in by
+putting them in a config file, or by setting the environment variables PIPELINE_SNS_ARN and
+PIPELINE_RECIPIENT.  The environment variable prefix, `PIPELINE_`, can be changed by passing the
+`env_prefix=`, to `pline.easy.main`, as in:
 
 ```python
 pline.easy.main(setup, env_prefix='HELLO')
@@ -114,25 +118,29 @@ pline.easy.main(setup, env_prefix='HELLO')
 
 Now you would use HELLO_SNS_ARN and HELLO_RECIPIENT as the environment variable names.
 
-Here is the list of `get_xxx` methods currently available on the pipeline object.  See their docstrings for details.
+Here is the list of `get_xxx` methods currently available on the pipeline object.  See their
+docstrings for details.
 
-* `get_defaults`: Gets the default object for this pipeline.  Any properties of this object are inherited by all other
-  pipeline objects, so they don't need to be defined on other objects unless you need different values than the 
-  defaults.  The default object defines the scheduleType, pipelineLogUri, role and resourceRole.
-* `get_schedule`: Gets a schedule object, and sets this schedule as the default schedule for the pipeline.
-* `get_shell_command_activity`: Gets a ShellCommandActivity
-* `get_ec2_resource`: Get an EC2 resource object.  It will already have its properties such as imageId, keypair, 
+* `get_defaults`: Gets the default object for this pipeline.  Any properties of this object are
+  inherited by all other pipeline objects, so they don't need to be defined on other objects unless
+  you need different values than the defaults.  The default object defines the scheduleType,
+  pipelineLogUri, role and resourceRole.
+  
+* `get_schedule`: Gets a schedule object, and sets this schedule as the default schedule for the
+* pipeline.  `get_shell_command_activity`: Gets a ShellCommandActivity `get_ec2_resource`: Get an
+* EC2 resource object.  It will already have its properties such as imageId, keypair, 
    subnetId and security group configured.
-* `get_sns_alarm`: Get an SnsAlarm object
-* `get_sns_failure_handler`: A version of `get_sns_alarm` which fills in the subject and message properties with a 
-  generic mesage which mentions the pipeline name, scheduled execution time, failure status, and the URI of the 
-  pipeline web console.  It's meant to be a suitable default onError handler in most cases.
+* `get_sns_alarm`: Get an SnsAlarm object `get_sns_failure_handler`: A version of `get_sns_alarm`
+* which fills in the subject and message properties with a 
+  generic mesage which mentions the pipeline name, scheduled execution time, failure status, and the
+  URI of the pipeline web console.  It's meant to be a suitable default onError handler in most cases.
 
-Note that when using the pline.easy module, you still have complete access to all of pline.  The pipeline object passed
-to the setup function has `get_xxx` methods for some of the most commonly used pipeline objects, but you are still 
-free to create any pline object directly and add it to the pipeline. You might want to do this because you want to use
-other pipeline objects for which there is no `get_xxx` method, or because the default behavior of the get_xxx method
-isn't what you want.  Here is an example directly creating a SnsError object and adding it to the pipeline:
+Note that when using the pline.easy module, you still have complete access to all of pline.  The
+pipeline object passed to the setup function has `get_xxx` methods for some of the most commonly
+used pipeline objects, but you are still free to create any pline object directly and add it to the
+pipeline. You might want to do this because you want to use other pipeline objects for which there
+is no `get_xxx` method, or because the default behavior of the get_xxx method isn't what you want.
+Here is an example directly creating a SnsError object and adding it to the pipeline:
 
 ```python
 def setup(pipeline):
@@ -149,9 +157,10 @@ def setup(pipeline):
 
 ### pline.easy config files
 
-The config file that you pass to create_pipeline.py using the --config option is a YAML file that simply defines a 
-dictionary of options.  If you run `create_pipeline.py -h`, the help message includes the list of options which 
-must be defined in order to create your pipeline.  A sample config file would look like this:
+The config file that you pass to create_pipeline.py using the --config option is a YAML file that
+simply defines a dictionary of options.  If you run `create_pipeline.py -h`, the help message
+includes the list of options which must be defined in order to create your pipeline.  A sample
+config file would look like this:
 
 ```
 EC2_AMI: ami-xx
@@ -163,10 +172,10 @@ EC2_KEYPAIR: production20150101
 LOG_URI_TEMPLATE: "s3://ferengi/pipelines/{region}/{pipeline_name}"
 ```
 
-You can pass multiple config files by specifying --config multiple times.  The intention is that you would share one 
-config file among multiple pipeline definitions in order to standardize certain defaults.  Pipeline-specific config
-options could be specified in a pipeline-specific config file, or passed in via the -o option to create_pipeline.py or
-by setting environment variables.
+You can pass multiple config files by specifying --config multiple times.  The intention is that you
+would share one config file among multiple pipeline definitions in order to standardize certain
+defaults.  Pipeline-specific config options could be specified in a pipeline-specific config file,
+or passed in via the -o option to create_pipeline.py or by setting environment variables.
 
 #### Data Pipeline Objects
 
