@@ -23,7 +23,7 @@ CLASSIFIERS = [
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 2.7",
     "Topic :: Utilities" ]
-REQUIRES = ["boto3>=1.2.3", "yaml", "envopt"]
+REQUIRES = ["boto3>=1.2.3", "PyYAML", "envopt"]
 TEST_REQUIRES = ["mock", "nose"]
 
 setup(
